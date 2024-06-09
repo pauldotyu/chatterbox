@@ -1,4 +1,4 @@
-# Chatter Box
+# ChatterBox
 
 Simple ChatGPT-like chatbot built with Streamlit and LangChain and uses Azure OpenAI as backend model.
 
