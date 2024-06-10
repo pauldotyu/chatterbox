@@ -1,31 +1,41 @@
 import os
 import streamlit as st
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI
 
-st.title('🦜🔗 Chatter Box')
+st.title('🦜🔗 ChatterBox')
 
-# Store environment variables in constants
-AZURE_OPENAI_API_KEY = os.environ.get("AZURE_OPENAI_API_KEY")
-AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
-AZURE_OPENAI_API_VERSION = os.environ.get("AZURE_OPENAI_API_VERSION")
-AZURE_OPENAI_CHAT_DEPLOYMENT_NAME = os.environ.get("AZURE_OPENAI_CHAT_DEPLOYMENT_NAME")
+system_message = {"role": "assistant", "content": "How can I help you today?"}
+
+with st.sidebar:
+  st.title('Azure OpenAI Settings')
+  AZURE_OPENAI_API_VERSION = st.text_input('API Version', key='AZURE_OPENAI_API_VERSION', value=os.getenv('AZURE_OPENAI_API_VERSION', '2024-02-15-preview'), help='The version of the Azure OpenAI API to use.')
+  AZURE_OPENAI_ENDPOINT = st.text_input('Endpoint', key='AZURE_OPENAI_ENDPOINT', value=os.getenv('AZURE_OPENAI_ENDPOINT', ''), help='The endpoint of the Azure OpenAI service.')
+  AZURE_OPENAI_MODEL_DEPLOYMENT_NAME = st.text_input('Name', key='AZURE_OPENAI_MODEL_DEPLOYMENT_NAME', value=os.getenv('AZURE_OPENAI_MODEL_DEPLOYMENT_NAME', ''), help='The name of the model deployment to use for the chatbot.')
+
+def clear_chat_history():
+  st.session_state.messages = [system_message]
+st.sidebar.button('New chat', on_click=clear_chat_history)
+
+# Get the Azure Credential
+token_provider = get_bearer_token_provider(DefaultAzureCredential(), "https://cognitiveservices.azure.com/.default")
 
 # Create the model once
 model = AzureChatOpenAI(
-  api_key=AZURE_OPENAI_API_KEY,
-  azure_endpoint=AZURE_OPENAI_ENDPOINT,
-  azure_deployment=AZURE_OPENAI_CHAT_DEPLOYMENT_NAME,
   openai_api_version=AZURE_OPENAI_API_VERSION,
-) if AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_VERSION and AZURE_OPENAI_CHAT_DEPLOYMENT_NAME else None
+  azure_endpoint=AZURE_OPENAI_ENDPOINT,
+  azure_deployment=AZURE_OPENAI_MODEL_DEPLOYMENT_NAME,
+  azure_ad_token_provider=token_provider,
+) if AZURE_OPENAI_API_VERSION and AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_MODEL_DEPLOYMENT_NAME else None
 
 # Set a default model deployment
 if "openai_model_deployment" not in st.session_state:
-  st.session_state["openai_model_deployment"] = AZURE_OPENAI_CHAT_DEPLOYMENT_NAME
+  st.session_state["openai_model_deployment"] = AZURE_OPENAI_MODEL_DEPLOYMENT_NAME
 
 # Initialize chat history
 if "messages" not in st.session_state:
-  st.session_state.messages = []
+  st.session_state.messages = [system_message]
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
@@ -36,7 +46,7 @@ if not model:
   st.warning('Azure OpenAI information not set!', icon='⚠')
 else:
   # Accept user input
-  if prompt := st.chat_input("What is up?"):
+  if prompt := st.chat_input("Type a message..."):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
     # Display user mesage in chat message container
