@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: mychatterbox
+  name: mychatterbox
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mychatterbox
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: mychatterbox
+    spec:
+      containers:
+      - image: ghcr.io/pauldotyu/chatterbox:latest
+        name: chatterbox
+        resources:
+          requests:
+            cpu: 2m
+            memory: 85Mi
+          limits:
+            cpu: 4m
+            memory: 128Mi

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: mychatterbox
+  name: mychatterbox
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8501
+  selector:
+    app: mychatterbox
+  type: LoadBalancer
