@@ -6,8 +6,8 @@ from langchain_core.language_models.llms import LLM
 from langchain_core.outputs import GenerationChunk
 
 
-class KaitoLLM(LLM):
-    """A Kaito hosted model that echoes the first `n` characters of the input.
+class KaitoLlamaLLM(LLM):
+    """A Kaito hosted llama2chat model that echoes the first `n` characters of the input.
 
     When contributing an implementation to LangChain, carefully document
     the model including the initialization parameters, include
@@ -56,9 +56,20 @@ class KaitoLLM(LLM):
         if stop is not None:
             raise ValueError("stop kwargs are not permitted.")
 
+        # Load the prompt into a JSON object
+        prompt_json = json.loads(prompt)
+
         # Create the payload
         payload = {
-            "prompt": prompt
+            "input_data": {
+                "input_string": [prompt_json],
+            },
+            "parameters": {
+                "temperature": self.temperature,
+                "max_batch_size": 32,
+                "max_gen_len": 1024,
+                "max_sqq_len": 1024,
+            },
         }
 
         # Set the headers and URL
@@ -70,7 +81,7 @@ class KaitoLLM(LLM):
             raise ValueError("No endpoint provided.")
 
         # print the request
-        print(f"Question: {payload}")
+        print(f"Payload: {payload}")
 
         # make the request
         response = requests.request("POST", url=url, headers=headers, json=payload)
@@ -78,17 +89,13 @@ class KaitoLLM(LLM):
         if response.status_code == 400:
             raise ValueError(f"Failed to generate text: {response.text}")
         else: 
-            # print the response
-            print(f"Answer: {response.text}")
-
             # convert the response to a JSON object
             response_json = json.loads(response.text)
-            # get the result from the JSON object
-            result = response_json["Result"]
-            # strip out the prompt from the result
-            response = result.replace(prompt, "")
+            # extract the response which is the last element of the results array
+            result = response_json["results"][0][-1]
+
             # return the response
-            return response.strip()
+            return result["content"]
 
     @property
     def _identifying_params(self) -> Dict[str, Any]:
