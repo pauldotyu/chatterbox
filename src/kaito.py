@@ -30,6 +30,15 @@ class KaitoLLM(LLM):
     temperature: float = 0.0
     """The temperature to use when generating text."""
 
+    max_length: int = 200
+    """The maximum length of the response."""
+
+    max_new_tokens: int = 200
+    """The maximum number of tokens to generate in the response."""
+
+    repetition_penalty: float = 1.0
+    """The repetition penalty to use when generating text."""
+
     def _call(
         self,
         prompt: str,
@@ -58,7 +67,15 @@ class KaitoLLM(LLM):
 
         # Create the payload
         payload = {
-            "prompt": prompt
+            "prompt": prompt,
+            "return_full_text": "false",
+            "clean_up_tokenization_spaces": "true",
+            "generate_kwargs": {
+                "temperature": self.temperature,
+                "max_length": self.max_length,
+                "max_new_tokens": self.max_new_tokens,
+                "repetition_penalty": self.repetition_penalty,
+            },
         }
 
         # Set the headers and URL
@@ -98,7 +115,7 @@ class KaitoLLM(LLM):
             # rules in LLM monitoring applications (e.g., in LangSmith users
             # can provide per token pricing for their model and monitor
             # costs for the given LLM.)
-            "model_name": "KaitoChatModel",
+            "model_name": "KaitoModel",
         }
 
     @property
